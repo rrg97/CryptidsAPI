@@ -3,5 +3,5 @@ from fastapi import FastAPI
 app = FastAPI()
 
 @app.get('/hi')
-def greet():
-    return "Hello? World?"
+def greet(who, status_code=200):
+    return f"Hello? {who}?"
