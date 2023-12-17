@@ -33,6 +33,7 @@ def create(creature: Creature) -> Creature:
     "(:name, :description, :country, :area, :aka)"
     params = model_to_dict(creature)
     curs.execute(qry, params)
+    conn.commit()
     return get_one(creature.name)
 
 def modify(creature: Creature) -> Creature:
@@ -46,10 +47,12 @@ def modify(creature: Creature) -> Creature:
     params = model_to_dict(creature)
     params["name_orig"] = creature.name
     _ = curs.execute(qry, params)
+    conn.commit()
     return get_one(creature.name)
 
 def delete(creature: Creature) -> bool:
     qry = "delete from creature where name = :name"
     params = {"name": creature.name}
     res = curs.execute(qry, params)
+    conn.commit()
     return bool(res)
