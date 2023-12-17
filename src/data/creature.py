@@ -1,5 +1,6 @@
-from .init import conn, curs
+from .init import conn, curs, IntegrityError
 from model.creature import Creature
+from .errors import MissingException, DuplicateException
 
 curs.execute(
 """create table if not exists creature(
@@ -18,9 +19,19 @@ def model_to_dict(creature: Creature) -> dict | None:
     return creature.model_dump() if creature else None
 
 def get_one(name: str) -> Creature:
+    if not name: return None
+
     qry = "select * from creature where name=:name"
     params = {"name": name}
+
     curs.execute(qry, params)
+    row = row_to_model(curs.fetchone())
+    
+    if not row:
+        raise MissingException(
+            f"Creature {name} not found"
+        )
+    
     return row_to_model(curs.fetchone())
 
 def get_all() -> list[Creature]:
@@ -29,10 +40,19 @@ def get_all() -> list[Creature]:
     return [row_to_model(row) for row in curs.fetchall()]
 
 def create(creature: Creature) -> Creature:
+    if not creature: return None
+
     qry = "insert into creature values"
     "(:name, :description, :country, :area, :aka)"
     params = model_to_dict(creature)
-    curs.execute(qry, params)
+
+    try:
+        curs.execute(qry, params)
+    except IntegrityError:
+        raise DuplicateException(
+            f"Creature {creature.name} already exists"
+        )
+    
     conn.commit()
     return get_one(creature.name)
 
@@ -46,13 +66,25 @@ def modify(creature: Creature) -> Creature:
              where name=:name_orig"""
     params = model_to_dict(creature)
     params["name_orig"] = creature.name
-    _ = curs.execute(qry, params)
-    conn.commit()
-    return get_one(creature.name)
+    curs.execute(qry, params)
 
-def delete(creature: Creature) -> bool:
+    if curs.rowcount == 1:
+        conn.commit()
+        return get_one(creature.name)
+    else:
+        raise MissingException(msg=f"Creature {creature.name} not found")
+
+def delete(name: str) -> bool:
+    if not name: return False
+
     qry = "delete from creature where name = :name"
-    params = {"name": creature.name}
-    res = curs.execute(qry, params)
+    params = {"name": name}
+    curs.execute(qry, params)
+
+    if curs.rowcount != 1:
+        raise MissingException(
+            f"Creature {name} not found"
+        )
     conn.commit()
-    return bool(res)
+    
+    return True
