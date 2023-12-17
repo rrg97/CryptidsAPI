@@ -1,20 +1,21 @@
 from fastapi import APIRouter
 from model.explorer import Explorer
-import fake.explorer as service
+import data.explorer as service
 
 router = APIRouter(
     prefix="/explorer"
 )
 
+@router.get("")
 @router.get("/")
-def top():
-    return "top explorer endpoint"
+def get_all() -> list[Explorer]:
+    return service.get_all()
 
 @router.get("/{name}")
 def get_one(name: str) -> Explorer | None:
     return service.get_one(name)
 
-@router.post("/")
+@router.post("/", status_code=201)
 def create(explorer: Explorer) -> Explorer:
     return service.create(explorer)
 

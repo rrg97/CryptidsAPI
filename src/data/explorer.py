@@ -1,4 +1,4 @@
-from .init import curs
+from .init import curs, conn
 from model.explorer import Explorer
 
 
@@ -10,8 +10,8 @@ curs.execute("""create table if not exists explorer(
 def row_to_model(row: tuple) -> Explorer:
     return Explorer(name=row[0], country=row[1], description=row[2])
 
-def model_to_dict(explorer: Explorer) -> dict:
-    return explorer.dict() if explorer else None
+def model_to_dict(explorer: Explorer) -> dict | None:
+    return explorer.model_dump() if explorer else None
 
 def get_one(name: str) -> Explorer:
     qry = "select * from explorer where name=:name"
@@ -29,6 +29,9 @@ def create(explorer: Explorer) -> Explorer:
              values (:name, :country, :description)"""
     params = model_to_dict(explorer)
     _ = curs.execute(qry, params)
+
+    conn.commit()
+
     return get_one(explorer.name)
 
 def modify(explorer: Explorer) -> Explorer:
@@ -40,11 +43,14 @@ def modify(explorer: Explorer) -> Explorer:
     params = model_to_dict(explorer)
     params["name_orig"] = explorer.name
     _ = curs.execute(qry, params)
+    conn.commit()
     explorer2 = get_one(explorer.name)
     return explorer2
 
-def delete(explorer: Explorer) -> bool:
+def delete(name: str) -> bool:
     qry = "delete from explorer where name = :name"
-    params = {"name": explorer.name}
+    params = {"name": name}
     res = curs.execute(qry, params)
+    conn.commit()
+    
     return bool(res)
