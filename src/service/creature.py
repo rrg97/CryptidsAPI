@@ -10,11 +10,11 @@ def get_one(name: str) -> Creature | None:
 def create(creature: Creature) -> Creature:
     return data.create(creature)
 
-def replace(name, creature: Creature) -> Creature:
-    return data.replace(name, creature)
+# def replace(name, creature: Creature) -> Creature:
+#     return data.replace(name, creature)
 
-def modify(name, creature: Creature) -> Creature:
-    return data.modify(name, creature)
+def modify(creature: Creature) -> Creature:
+    return data.modify(creature)
 
-def delete(name) -> bool:
-    return data.delete(name)
+def delete(creature: Creature) -> bool:
+    return data.delete(creature)
