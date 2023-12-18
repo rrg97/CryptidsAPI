@@ -12,8 +12,13 @@ curs.execute(
 )
 
 def row_to_model(row: tuple) -> Creature:
-    (name, description, country, area, aka) = row
-    return Creature(name, description, country, area, aka)
+    return Creature(
+        name=row[0],
+        description=row[1],
+        country=row[2],
+        area=row[3],
+        aka=row[4]
+    )
 
 def model_to_dict(creature: Creature) -> dict | None:
     return creature.model_dump() if creature else None
@@ -25,6 +30,7 @@ def get_one(name: str) -> Creature:
     params = {"name": name}
 
     curs.execute(qry, params)
+
     row = row_to_model(curs.fetchone())
     
     if not row:
@@ -32,7 +38,7 @@ def get_one(name: str) -> Creature:
             f"Creature {name} not found"
         )
     
-    return row_to_model(curs.fetchone())
+    return row
 
 def get_all() -> list[Creature]:
     qry = "select * from creature"
@@ -42,8 +48,7 @@ def get_all() -> list[Creature]:
 def create(creature: Creature) -> Creature:
     if not creature: return None
 
-    qry = "insert into creature values"
-    "(:name, :description, :country, :area, :aka)"
+    qry = """insert into creature (name, description, country, area, aka) values (:name, :description, :country, :area, :aka)"""
     params = model_to_dict(creature)
 
     try:
@@ -54,6 +59,7 @@ def create(creature: Creature) -> Creature:
         )
     
     conn.commit()
+
     return get_one(creature.name)
 
 def modify(creature: Creature) -> Creature:

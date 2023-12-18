@@ -13,7 +13,7 @@ def get_db(reset: bool = False):
             return
         conn = None
 
-    name = os.getenv("CRYPTID_SQLITE_DB_PATH")
+    name = os.getenv("CRYPTID_SQLITE_DB")
     conn = connect(name, check_same_thread=False)
     curs = conn.cursor()
 
