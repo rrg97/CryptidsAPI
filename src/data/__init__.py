@@ -11,3 +11,4 @@ if os.environ["CRYPTID_SQLITE_DB"] != ":memory:":
 
 from .creature import *
 from .explorer import *
+from .user import *
