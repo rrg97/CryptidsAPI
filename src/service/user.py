@@ -47,7 +47,7 @@ def get_current_user(token: str) -> User | None:
 
 def lookup_user(username: str) -> User | None:
     """Return a matching User from the database for <name>"""
-    if (user := data.get(username)):
+    if (user := data.get_one(username)):
         return user
     return None
 
@@ -55,7 +55,7 @@ def auth_user(name: str, plain: str) -> User | None:
     """Authenticate user <name> and <plain> password"""
     if not (user := lookup_user(name)):
         return None
-    if not verify_password(plain, user.hash):
+    if not verify_password(plain, user.hashed_passwd):
         return None
     return user
 

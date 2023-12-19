@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 
-if os.environ["CRYPTID_SQLITE_DB"] != ":memory:":
+if not "CRYPTID_SQLITE_DB" in os.environ:
     SRC_DIR = Path(__file__).resolve().parent.parent
     DB_DIR_NAME = SRC_DIR / "db"
 

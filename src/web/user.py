@@ -9,8 +9,6 @@ else:
     from service import user as service
 from data.errors import MissingException, DuplicateException
 
-from main import app
-
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 router = APIRouter(prefix = "/user")
@@ -46,6 +44,7 @@ async def create_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+from main import app
 @app.get("/token")
 def get_access_token(token: str = Depends(oauth2_dep)) -> dict:
     """Return the current access token"""
