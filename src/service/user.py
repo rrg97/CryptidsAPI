@@ -21,12 +21,16 @@ SECRET_KEY = "keep-it-secret-keep-it-safe"
 ALGORITHM = "HS256"
 N_ITER = 600000
 
-def verify_password(plain: str, hash: str, salt: str) -> bool:
+def verify_password(name: str, plain: str) -> bool:
     """Hash <plain> and compare with <hash> from the database"""
+
+    salt = data.get_user_salt(name=name)
+    hash = data.get_hash_for_user(name)
+
     return hashlib.pbkdf2_hmac(
         password=plain.encode(encoding="utf-8"),
         hash_name='sha256',
-        salt=salt,
+        salt=salt.encode(encoding="utf-8"),
         iterations=N_ITER).hex() == hash
 
 def get_hash(plain: str):
@@ -40,7 +44,6 @@ def get_hash(plain: str):
         iterations=N_ITER).hex(),
         salt.hex()
     )
-
 
 def get_jwt_username(token:str) -> str | None:
     """Return username from JWT access <token>"""
@@ -70,7 +73,7 @@ def auth_user(name: str, plain: str) -> User | None:
     """Authenticate user <name> and <plain> password"""
     if not (user := lookup_user(name)):
         return None
-    if not verify_password(plain, user.hashed_passwd):
+    if not verify_password(name, plain):
         return None
     return user
 

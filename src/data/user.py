@@ -12,11 +12,27 @@ curs.execute("""create table if not exists
                   hashed_passwd text, salt text)""")
 
 def row_to_model(row: tuple) -> User:
-    name, hashed_passwd = row
-    return User(name=name, hashed_passwd=hashed_passwd)
+    name, hashed_passwd, salt = row
+    return User(name=name, hashed_passwd=hashed_passwd, salt= salt)
 
 def model_to_dict(user: User) -> dict | None:
     return user.model_dump() if user else None
+
+def get_user_salt(name: str) -> str:
+    qry = "select salt from user where name=:name"
+    params = {"name": name}
+    curs.execute(qry, params)
+    row = curs.fetchone()
+
+    return row[0]
+
+def get_hash_for_user(name: str) -> str:
+    qry = "select hashed_passwd from user where name=:name"
+    params = {"name": name}
+    curs.execute(qry, params)
+    row = curs.fetchone()
+
+    return row[0]
 
 def get_one(name: str) -> User:
     qry = "select * from user where name=:name"
