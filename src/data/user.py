@@ -1,15 +1,15 @@
 from model.user import User
-from .init import (conn, curs, get_db, IntegrityError)
+from .init import (conn, curs, IntegrityError)
 from .errors import MissingException, DuplicateException
 
 curs.execute("""create table if not exists
                 user(
                   name text primary key,
-                  hashed_passwd text)""")
+                  hashed_passwd text,salt text)""")
 curs.execute("""create table if not exists
                 xuser(
                   name text primary key,
-                  hashed_passwd text)""")
+                  hashed_passwd text, salt text)""")
 
 def row_to_model(row: tuple) -> User:
     name, hashed_passwd = row
@@ -35,29 +35,30 @@ def get_all() -> list[User]:
 
 def create(user: User, table:str = "user"):
     qry = f"""insert into {table}
-        (name, hashed_passwd)
+        (name, hashed_passwd, salt)
         values
-        (:name, :hashed_passwd)"""
+        (:name, :hashed_passwd, :salt)"""
     params = model_to_dict(user)
     try:
         curs.execute(qry, params)
         conn.commit()
+        return user
     except IntegrityError:
         raise DuplicateException(msg=
             f"{table}: user {user.name} already exists")
 
-def modify(name: str, user: User)  -> User:
+def modify(name: str, passwd: str)  -> User:
     qry = """update user set
              name=:name, hashed_passwd=:hashed_passwd
              where name=:name0"""
     params = {
-        "name": user.name,
-        "hashed_passwd": user.hashed_passwd,
+        "name": name,
+        "hashed_passwd": passwd,
         "name0": name}
     curs.execute(qry, params)
     conn.commit()
     if curs.rowcount == 1:
-        return get_one(user.name)
+        return get_one(name)
     else:
         raise MissingException(msg=f"User {name} not found")
 

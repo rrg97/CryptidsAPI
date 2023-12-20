@@ -64,16 +64,22 @@ def get_one(name) -> User:
         raise HTTPException(status_code=404, detail=exc.msg)
 
 @router.post("/", status_code=201)
-def create(user: User) -> User:
+def create(name: str, passwd: str) -> User:
     try:
-        return service.create(user)
+        user = service.create(name, passwd)
+        
+        return User(
+            name=name,
+            hashed_passwd=user.hashed_passwd,
+            salt=''
+        )
     except DuplicateException as exc:
         raise HTTPException(status_code=409, detail=exc.msg)
 
 @router.patch("/")
-def modify(name: str, user: User) -> User:
+def modify(name: str, passwd: str) -> User:
     try:
-        return service.modify(name, user)
+        return service.modify(name, passwd)
     except MissingException as exc:
         raise HTTPException(status_code=404, detail=exc.msg)
 
