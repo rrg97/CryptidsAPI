@@ -5,11 +5,11 @@ from .errors import MissingException, DuplicateException
 curs.execute("""create table if not exists
                 user(
                   name text primary key,
-                  hashed_passwd text,salt text)""")
+                  hashed_passwd text, salt bytes)""")
 curs.execute("""create table if not exists
                 xuser(
                   name text primary key,
-                  hashed_passwd text, salt text)""")
+                  hashed_passwd text, salt bytes)""")
 
 def row_to_model(row: tuple) -> User:
     name, hashed_passwd, salt = row

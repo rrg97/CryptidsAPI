@@ -21,17 +21,15 @@ SECRET_KEY = "keep-it-secret-keep-it-safe"
 ALGORITHM = "HS256"
 N_ITER = 600000
 
-def verify_password(name: str, plain: str) -> bool:
+def verify_password(user: User, plain: str) -> bool:
     """Hash <plain> and compare with <hash> from the database"""
-
-    salt = data.get_user_salt(name=name)
-    hash = data.get_hash_for_user(name)
-
-    return hashlib.pbkdf2_hmac(
+    hash_ = hashlib.pbkdf2_hmac(
         password=plain.encode(encoding="utf-8"),
         hash_name='sha256',
-        salt=salt.encode(encoding="utf-8"),
-        iterations=N_ITER).hex() == hash
+        salt=user.salt,
+        iterations=N_ITER).hex()
+
+    return  hash_ == user.hashed_passwd
 
 def get_hash(plain: str):
     """Return the hash of a <plain> string"""
@@ -42,7 +40,7 @@ def get_hash(plain: str):
         hash_name='sha256',
         salt=salt,
         iterations=N_ITER).hex(),
-        salt.hex()
+        salt
     )
 
 def get_jwt_username(token:str) -> str | None:
@@ -71,9 +69,10 @@ def lookup_user(username: str) -> User | None:
 
 def auth_user(name: str, plain: str) -> User | None:
     """Authenticate user <name> and <plain> password"""
-    if not (user := lookup_user(name)):
+    user = lookup_user(name)
+    if not user:
         return None
-    if not verify_password(name, plain):
+    if not verify_password(user, plain):
         return None
     return user
 
@@ -103,7 +102,7 @@ def create(name: str, passwd: str) -> User:
         hashed_passwd='',
         salt=''
     )
-    user.hashed_passwd, user.salt = get_hash(user.hashed_passwd)
+    user.hashed_passwd, user.salt = get_hash(passwd)
 
     return data.create(user)
 
