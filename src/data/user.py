@@ -13,7 +13,7 @@ curs.execute("""create table if not exists
 
 def row_to_model(row: tuple) -> User:
     name, hashed_passwd, salt = row
-    return User(name=name, hashed_passwd=hashed_passwd, salt= salt)
+    return User(name=name, hashed_passwd=hashed_passwd, salt=salt)
 
 def model_to_dict(user: User) -> dict | None:
     return user.model_dump() if user else None

@@ -3,6 +3,8 @@ import os
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from model.user import User
+from responses import UserResponse
+
 if os.getenv("CRYPTID_UNIT_TEST"):
     from fake import user as service
 else:
@@ -15,51 +17,77 @@ oauth2_dep = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter(prefix = "/user")
 
 
-async def validate_token(request: Request):
+async def is_valid_token(request: Request):
     headers = request.headers
-    if not headers["Authorization"]:
+    if "Authorization" not in headers:
         raise HTTPException(
             status_code=422,
             detail="Missing authorization bearer token"
         )
-    if headers["Authorization"].split(" ")[0] != "Bearer":
+    token_type, token = headers["Authorization"].split(" ")
+    if token_type != "Bearer":
         raise HTTPException(
             status_code=422,
             detail="Bearer token type not specified"
         )
+    
+    username: str = service.get_jwt_username(token=token)
 
-@router.get("/", dependencies=[Depends(validate_token)])
-def get_all() -> list[User]:
-    return service.get_all()
+    return username is not None
 
-@router.get("/{name}", dependencies=[Depends(validate_token)])
-def get_one(name) -> User:
+@router.get("/", response_model=list[UserResponse])
+def get_all(valid_token: bool = Depends(is_valid_token)) -> list[UserResponse]:
+    if not valid_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authorization bearer token"
+        )
+    users = service.get_all()
+    users_ = [UserResponse(**user.model_dump()) for user in users]
+
+    return users_
+
+@router.get("/{name}", response_model=UserResponse)
+def get_one(name: str, valid_token: bool = Depends(is_valid_token)) -> UserResponse:
+    if not valid_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authorization bearer token"
+        )
     try:
-        return service.get_one(name)
+        user = service.get_one(name)
+        return UserResponse(
+            name=user.name,
+            hashed_passwd=user.hashed_passwd
+        )
     except MissingException as exc:
         raise HTTPException(status_code=404, detail=exc.msg)
 
-@router.post("/", status_code=201, dependencies=[Depends(validate_token)])
-def create(name: str, passwd: str) -> User:
+@router.post("/", status_code=201, dependencies=[Depends(is_valid_token)], response_model=UserResponse)
+def create(name: str, passwd: str) -> UserResponse:
     try:
         user = service.create(name, passwd)
         
-        return User(
+        return UserResponse(
             name=name,
             hashed_passwd=user.hashed_passwd,
-            salt=''
         )
     except DuplicateException as exc:
         raise HTTPException(status_code=409, detail=exc.msg)
 
-@router.patch("/", dependencies=[Depends(validate_token)])
-def modify(name: str, passwd: str) -> User:
+@router.patch("/", dependencies=[Depends(is_valid_token)], response_model=UserResponse)
+def modify(name: str, passwd: str) -> UserResponse:
     try:
-        return service.modify(name, passwd)
+        user = service.modify(name, passwd)
+
+        return UserResponse(
+            name=user.name,
+            hashed_passwd=user.hashed_passwd
+        )
     except MissingException as exc:
         raise HTTPException(status_code=404, detail=exc.msg)
 
-@router.delete("/{name}", dependencies=[Depends(validate_token)])
+@router.delete("/{name}", dependencies=[Depends(is_valid_token)], response_model=UserResponse)
 def delete(name: str) -> None:
     try:
         return service.delete(name)
@@ -73,7 +101,6 @@ def unauthed():
         headers={"WWW-Authenticate": "Bearer"},
         )
 
-from main import app
 @router.post("/token")
 async def create_access_token(
     form_data: OAuth2PasswordRequestForm =  Depends()
@@ -89,6 +116,7 @@ async def create_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+from main import app
 @app.post("/token")
 def get_access_token(token: str = Depends(oauth2_dep)) -> dict:
     """Return the current access token"""

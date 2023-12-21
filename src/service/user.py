@@ -5,6 +5,7 @@ from jose.exceptions import JWTError
 from model.user import User
 from copy import deepcopy
 
+
 from os import urandom
 
 if os.getenv("CRYPTID_UNIT_TEST"):
@@ -51,6 +52,7 @@ def get_jwt_username(token:str) -> str | None:
             return None
     except JWTError:
         return None
+
     return username
 
 def get_current_user(token: str) -> User | None:
